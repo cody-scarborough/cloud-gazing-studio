@@ -201,22 +201,23 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
 
       const sx = p.sunX * w;
       const sy = p.sunY * h;
-      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w, h) * 0.7);
-      glow.addColorStop(0, css(p.sunGlow, 0.55));
-      glow.addColorStop(0.18, css(p.sunGlow, 0.22));
-      glow.addColorStop(0.55, css(p.sunGlow, 0.05));
+      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w, h) * 0.8);
+      glow.addColorStop(0, css(p.sunGlow, 0.5));
+      glow.addColorStop(0.08, css(p.sunGlow, 0.28));
+      glow.addColorStop(0.3, css(p.sunGlow, 0.12));
+      glow.addColorStop(0.7, css(p.sunGlow, 0.03));
       glow.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, w, h);
 
-      const disc = ctx.createRadialGradient(sx, sy, 0, sx, sy, w * 0.045);
-      disc.addColorStop(0, css(p.sun, 0.95));
-      disc.addColorStop(0.55, css(p.sun, 0.35));
-      disc.addColorStop(1, "rgba(0,0,0,0)");
+      const discR = w * 0.05;
+      const disc = ctx.createRadialGradient(sx, sy, 0, sx, sy, discR);
+      disc.addColorStop(0, css(p.sun, 0.9));
+      disc.addColorStop(0.25, css(p.sun, 0.6));
+      disc.addColorStop(0.6, css(p.sun, 0.16));
+      disc.addColorStop(1, css(p.sun, 0));
       ctx.fillStyle = disc;
-      ctx.beginPath();
-      ctx.arc(sx, sy, w * 0.045, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(sx - discR, sy - discR, discR * 2, discR * 2);
 
       const haze = ctx.createLinearGradient(0, h * 0.62, 0, h);
       haze.addColorStop(0, css(p.horizon, 0));

@@ -9,7 +9,7 @@ export type Sighting = {
   isPublic: boolean;
   createdAt: string;
   userId: string;
-  author?: string;
+  author?: string | undefined;
 };
 
 type Row = {

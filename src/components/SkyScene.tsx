@@ -329,7 +329,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         ctx.drawImage(c.sprite, c.x - pad, c.y - pad);
 
         if (hoverRef.current === c.id || selectedThis) {
-          ctx.globalAlpha = alpha * (selectedThis ? 0.5 : 0.28);
+          ctx.globalAlpha = alpha * (selectedThis ? 0.16 : 0.1);
           ctx.globalCompositeOperation = "lighter";
           ctx.drawImage(c.sprite, c.x - pad, c.y - pad);
           ctx.globalCompositeOperation = "source-over";

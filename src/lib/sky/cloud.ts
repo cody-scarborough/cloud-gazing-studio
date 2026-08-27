@@ -128,7 +128,7 @@ export function renderCloudSprite(
     r: p.r,
   }));
 
-  const soft = Math.max(1.5, widthPx * 0.025);
+  const soft = Math.max(1.2, widthPx * 0.016);
 
   // 1. blurred silhouette
   ctx.save();

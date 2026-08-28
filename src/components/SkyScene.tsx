@@ -100,7 +100,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         vx: dir * (52 + Math.random() * 30),
         vy: (Math.random() - 0.5) * 6,
         count: 5 + Math.floor(Math.random() * 8),
-        scale: 5 + Math.random() * 5,
+        scale: 2.6 + Math.random() * 3.2,
         phase: Math.random() * 6,
         honkAt: 1 + Math.random() * 4,
       });

@@ -4,7 +4,13 @@ import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
-import { drawBalloon, drawGeese, drawPlane, type Entity } from "@/lib/sky/entities";
+import {
+  drawBalloon,
+  drawGeese,
+  drawPlane,
+  preloadSkySprites,
+  type Entity,
+} from "@/lib/sky/entities";
 import { randomSeed } from "@/lib/sky/rng";
 
 type SkyCloud = {
@@ -94,7 +100,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         vx: dir * (52 + Math.random() * 30),
         vy: (Math.random() - 0.5) * 6,
         count: 5 + Math.floor(Math.random() * 8),
-        scale: 5 + Math.random() * 5,
+        scale: 2.6 + Math.random() * 3.2,
         phase: Math.random() * 6,
         honkAt: 1 + Math.random() * 4,
       });
@@ -181,11 +187,41 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
     }
 
+    // fine film grain, built once and tiled — keeps the sky from banding
+    let grainPattern: CanvasPattern | null = null;
+    const makeGrain = () => {
+      const g = document.createElement("canvas");
+      g.width = 128;
+      g.height = 128;
+      const gc = g.getContext("2d");
+      if (!gc) return null;
+      const img = gc.createImageData(128, 128);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = 128 + (Math.random() - 0.5) * 255;
+        img.data[i] = v;
+        img.data[i + 1] = v;
+        img.data[i + 2] = v;
+        img.data[i + 3] = 26;
+      }
+      gc.putImageData(img, 0, 0);
+      return ctx.createPattern(g, "repeat");
+    };
+
     const drawBackdrop = (p: SkyPalette, w: number, h: number, t: number) => {
+      // atmospheric scattering falls off non-linearly towards the horizon
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, css(p.zenith));
-      grad.addColorStop(0.55, css(p.mid));
-      grad.addColorStop(1, css(p.horizon));
+      const mixTo = (a: [number, number, number], b: [number, number, number], k: number) =>
+        css([
+          Math.round(a[0] + (b[0] - a[0]) * k),
+          Math.round(a[1] + (b[1] - a[1]) * k),
+          Math.round(a[2] + (b[2] - a[2]) * k),
+        ]);
+      for (let i = 0; i <= 8; i++) {
+        const s = i / 8;
+        const k = Math.pow(s, 1.8);
+        const color = k < 0.5 ? mixTo(p.zenith, p.mid, k * 2) : mixTo(p.mid, p.horizon, (k - 0.5) * 2);
+        grad.addColorStop(s, color);
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
@@ -210,20 +246,56 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, w, h);
 
-      const discR = w * 0.05;
+      // layered bloom: broad halo, tight halo, then the small bright core
+      for (const [radius, alpha] of [
+        [w * 0.22, 0.14],
+        [w * 0.09, 0.3],
+      ] as const) {
+        const bloom = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+        bloom.addColorStop(0, css(p.sun, alpha));
+        bloom.addColorStop(0.45, css(p.sunGlow, alpha * 0.45));
+        bloom.addColorStop(1, css(p.sunGlow, 0));
+        ctx.fillStyle = bloom;
+        ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
+      }
+
+      const discR = w * 0.022;
       const disc = ctx.createRadialGradient(sx, sy, 0, sx, sy, discR);
-      disc.addColorStop(0, css(p.sun, 0.9));
-      disc.addColorStop(0.25, css(p.sun, 0.6));
-      disc.addColorStop(0.6, css(p.sun, 0.16));
+      disc.addColorStop(0, css(p.sun, 0.95));
+      disc.addColorStop(0.55, css(p.sun, 0.7));
       disc.addColorStop(1, css(p.sun, 0));
       ctx.fillStyle = disc;
       ctx.fillRect(sx - discR, sy - discR, discR * 2, discR * 2);
 
-      const haze = ctx.createLinearGradient(0, h * 0.62, 0, h);
+      const haze = ctx.createLinearGradient(0, h * 0.5, 0, h);
       haze.addColorStop(0, css(p.horizon, 0));
-      haze.addColorStop(1, css(p.horizon, 0.75));
+      haze.addColorStop(0.55, css(p.horizon, 0.28));
+      haze.addColorStop(1, css(p.horizon, 0.82));
       ctx.fillStyle = haze;
-      ctx.fillRect(0, h * 0.62, w, h * 0.38);
+      ctx.fillRect(0, h * 0.5, w, h * 0.5);
+    };
+
+    const drawFilmGrade = (w: number, h: number) => {
+      if (!grainPattern) grainPattern = makeGrain();
+      if (grainPattern) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = grainPattern;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+      const vig = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.45,
+        Math.min(w, h) * 0.25,
+        w * 0.5,
+        h * 0.45,
+        Math.max(w, h) * 0.78,
+      );
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(12,18,32,0.22)");
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, w, h);
     };
 
     const drawHills = (p: SkyPalette, w: number, h: number) => {
@@ -312,11 +384,12 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         }
 
         const stretch = 1 + Math.min(0.35, wind * 0.32);
-        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 5)}|${Math.round(stretch * 20)}`;
+        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 1.6)}|${Math.round(stretch * 12)}`;
         if (key !== c.spriteKey && renderBudget > 0) {
           c.sprite = renderCloudSprite(c.seed, c.width, palette, c.morph, {
             sunDir,
             stretch,
+            detail: 0.45 + c.depth * 0.55,
           });
           c.spriteKey = key;
           renderBudget--;

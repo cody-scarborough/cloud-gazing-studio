@@ -4,7 +4,13 @@ import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
-import { drawBalloon, drawGeese, drawPlane, type Entity } from "@/lib/sky/entities";
+import {
+  drawBalloon,
+  drawGeese,
+  drawPlane,
+  preloadSkySprites,
+  type Entity,
+} from "@/lib/sky/entities";
 import { randomSeed } from "@/lib/sky/rng";
 
 type SkyCloud = {

@@ -246,20 +246,56 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, w, h);
 
-      const discR = w * 0.05;
+      // layered bloom: broad halo, tight halo, then the small bright core
+      for (const [radius, alpha] of [
+        [w * 0.22, 0.14],
+        [w * 0.09, 0.3],
+      ] as const) {
+        const bloom = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+        bloom.addColorStop(0, css(p.sun, alpha));
+        bloom.addColorStop(0.45, css(p.sunGlow, alpha * 0.45));
+        bloom.addColorStop(1, css(p.sunGlow, 0));
+        ctx.fillStyle = bloom;
+        ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
+      }
+
+      const discR = w * 0.022;
       const disc = ctx.createRadialGradient(sx, sy, 0, sx, sy, discR);
-      disc.addColorStop(0, css(p.sun, 0.9));
-      disc.addColorStop(0.25, css(p.sun, 0.6));
-      disc.addColorStop(0.6, css(p.sun, 0.16));
+      disc.addColorStop(0, css(p.sun, 0.95));
+      disc.addColorStop(0.55, css(p.sun, 0.7));
       disc.addColorStop(1, css(p.sun, 0));
       ctx.fillStyle = disc;
       ctx.fillRect(sx - discR, sy - discR, discR * 2, discR * 2);
 
-      const haze = ctx.createLinearGradient(0, h * 0.62, 0, h);
+      const haze = ctx.createLinearGradient(0, h * 0.5, 0, h);
       haze.addColorStop(0, css(p.horizon, 0));
-      haze.addColorStop(1, css(p.horizon, 0.75));
+      haze.addColorStop(0.55, css(p.horizon, 0.28));
+      haze.addColorStop(1, css(p.horizon, 0.82));
       ctx.fillStyle = haze;
-      ctx.fillRect(0, h * 0.62, w, h * 0.38);
+      ctx.fillRect(0, h * 0.5, w, h * 0.5);
+    };
+
+    const drawFilmGrade = (w: number, h: number) => {
+      if (!grainPattern) grainPattern = makeGrain();
+      if (grainPattern) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = grainPattern;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+      const vig = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.45,
+        Math.min(w, h) * 0.25,
+        w * 0.5,
+        h * 0.45,
+        Math.max(w, h) * 0.78,
+      );
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(12,18,32,0.22)");
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, w, h);
     };
 
     const drawHills = (p: SkyPalette, w: number, h: number) => {

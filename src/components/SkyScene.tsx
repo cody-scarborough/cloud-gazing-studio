@@ -384,11 +384,12 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         }
 
         const stretch = 1 + Math.min(0.35, wind * 0.32);
-        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 5)}|${Math.round(stretch * 20)}`;
+        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 1.6)}|${Math.round(stretch * 12)}`;
         if (key !== c.spriteKey && renderBudget > 0) {
           c.sprite = renderCloudSprite(c.seed, c.width, palette, c.morph, {
             sunDir,
             stretch,
+            detail: 0.45 + c.depth * 0.55,
           });
           c.spriteKey = key;
           renderBudget--;

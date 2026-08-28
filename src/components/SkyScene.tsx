@@ -187,11 +187,41 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
     }
 
+    // fine film grain, built once and tiled — keeps the sky from banding
+    let grainPattern: CanvasPattern | null = null;
+    const makeGrain = () => {
+      const g = document.createElement("canvas");
+      g.width = 128;
+      g.height = 128;
+      const gc = g.getContext("2d");
+      if (!gc) return null;
+      const img = gc.createImageData(128, 128);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = 128 + (Math.random() - 0.5) * 255;
+        img.data[i] = v;
+        img.data[i + 1] = v;
+        img.data[i + 2] = v;
+        img.data[i + 3] = 26;
+      }
+      gc.putImageData(img, 0, 0);
+      return ctx.createPattern(g, "repeat");
+    };
+
     const drawBackdrop = (p: SkyPalette, w: number, h: number, t: number) => {
+      // atmospheric scattering falls off non-linearly towards the horizon
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, css(p.zenith));
-      grad.addColorStop(0.55, css(p.mid));
-      grad.addColorStop(1, css(p.horizon));
+      const mixTo = (a: [number, number, number], b: [number, number, number], k: number) =>
+        css([
+          Math.round(a[0] + (b[0] - a[0]) * k),
+          Math.round(a[1] + (b[1] - a[1]) * k),
+          Math.round(a[2] + (b[2] - a[2]) * k),
+        ]);
+      for (let i = 0; i <= 8; i++) {
+        const s = i / 8;
+        const k = Math.pow(s, 1.8);
+        const color = k < 0.5 ? mixTo(p.zenith, p.mid, k * 2) : mixTo(p.mid, p.horizon, (k - 0.5) * 2);
+        grad.addColorStop(s, color);
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 

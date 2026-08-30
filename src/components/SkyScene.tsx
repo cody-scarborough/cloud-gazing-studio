@@ -68,7 +68,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const spawnCloud = useCallback((offscreen: boolean) => {
     const { w, h } = sizeRef.current;
     const depth = 0.35 + Math.random() * 0.65;
-    const width = (w * 0.1 + Math.random() * w * 0.16) * (0.55 + depth * 0.7);
+    const width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + depth * 0.7);
     const seed = makeCloudSeed(randomSeed());
     const cloud: SkyCloud = {
       id: nextIdRef.current++,
@@ -183,6 +183,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     resize();
     window.addEventListener("resize", resize);
 
+    preloadSkySprites();
+
     if (cloudsRef.current.length === 0) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
     }
@@ -279,7 +281,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       if (!grainPattern) grainPattern = makeGrain();
       if (grainPattern) {
         ctx.save();
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.32;
         ctx.fillStyle = grainPattern;
         ctx.fillRect(0, 0, w, h);
         ctx.restore();
@@ -377,7 +379,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         if (c.x > w + c.width * 0.6) {
           c.seed = makeCloudSeed(randomSeed());
           c.named = false;
-          c.width = (w * 0.1 + Math.random() * w * 0.16) * (0.55 + c.depth * 0.7);
+          c.width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + c.depth * 0.7);
           c.x = -c.width * 1.3;
           c.y = h * (0.04 + Math.random() * 0.52) * (1.1 - c.depth * 0.25);
           c.fade = 0;
@@ -466,6 +468,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       }
 
       drawHills(palette, w, h);
+      drawFilmGrade(w, h);
       ctx.restore();
 
       // spawn timers

@@ -201,7 +201,7 @@ export function renderCloudSprite(
   const nOffY = seed.ny ?? (seed.seed % 197);
   // noise frequency relative to cloud size so detail scale stays constant
   const freq = 7.5 / Math.max(24, boxW * scale);
-  const warpAmp = Math.max(3, boxW * scale * 0.075);
+  const warpAmp = Math.max(3, boxW * scale * 0.055);
   const drift = morph * 0.08;
 
   for (let y = 0; y < gh; y++) {
@@ -232,7 +232,7 @@ export function renderCloudSprite(
       // fractal erosion: billows on top, dissolving shreds at the fringes
       const det = fbm((x + nOffX) * freq * 4.4, (y + nOffY) * freq * 4.4 + drift * 2, 4, seed.seed + 5);
       const fine = valueNoise((x + nOffX) * freq * 11, (y + nOffY) * freq * 11, seed.seed + 9);
-      let d = f * (0.62 + det * 0.72) - 0.16 + (fine - 0.5) * 0.07;
+      let d = f * (0.78 + det * 0.5) - 0.11 + (fine - 0.5) * 0.05;
       if (d > 0) density[y * gw + x] = d;
     }
   }
@@ -244,8 +244,8 @@ export function renderCloudSprite(
   const lx = sunDir === 0 ? 0.25 : sunDir * 0.75;
   const ly = -1;
   const llen = Math.hypot(lx, ly);
-  const stepX = (lx / llen) * Math.max(1.4, gw * 0.02);
-  const stepY = (ly / llen) * Math.max(1.4, gw * 0.02);
+  const stepX = (lx / llen) * Math.max(1.6, gw * 0.03);
+  const stepY = (ly / llen) * Math.max(1.6, gw * 0.03);
 
   const [lr, lg, lb] = palette.cloudLight;
   const [mr, mg, mb] = palette.cloudMid;
@@ -268,13 +268,13 @@ export function renderCloudSprite(
         if (sx < 0 || sy < 0 || sx >= gw || sy >= gh) break;
         occ += density[sy * gw + sx]! * (1 - (s - 1) / (STEPS * 1.6));
       }
-      const trans = Math.exp(-occ * 0.95);
+      const trans = Math.exp(-occ * 1.9);
 
-      const alpha = clamp01(d * 2.3);
+      const alpha = clamp01(d * 2.7);
       const thin = 1 - alpha; // translucent fringes
 
       // deep body -> shadow, lit crowns -> bright, fringes pick up sun colour
-      const litMix = clamp01(trans * 1.05);
+      const litMix = clamp01(Math.pow(trans, 0.75) * 1.05);
       let r = sr + (lr - sr) * litMix;
       let g = sg + (lg - sg) * litMix;
       let b = sb + (lb - sb) * litMix;
@@ -292,7 +292,7 @@ export function renderCloudSprite(
       b += (ambB - b) * under;
 
       // forward-scattered sunlight through thin edges
-      const glow = thin * trans * 0.55;
+      const glow = thin * trans * 0.45;
       r += (sunR - r) * glow;
       g += (sunG - g) * glow;
       b += (sunB - b) * glow;

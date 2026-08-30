@@ -183,6 +183,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     resize();
     window.addEventListener("resize", resize);
 
+    preloadSkySprites();
+
     if (cloudsRef.current.length === 0) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
     }

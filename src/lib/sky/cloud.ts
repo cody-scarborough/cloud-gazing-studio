@@ -232,7 +232,7 @@ export function renderCloudSprite(
       // fractal erosion: billows on top, dissolving shreds at the fringes
       const det = fbm((x + nOffX) * freq * 4.4, (y + nOffY) * freq * 4.4 + drift * 2, 4, seed.seed + 5);
       const fine = valueNoise((x + nOffX) * freq * 11, (y + nOffY) * freq * 11, seed.seed + 9);
-      let d = f * (0.62 + det * 0.72) - 0.16 + (fine - 0.5) * 0.07;
+      let d = f * (0.78 + det * 0.5) - 0.11 + (fine - 0.5) * 0.05;
       if (d > 0) density[y * gw + x] = d;
     }
   }
@@ -270,7 +270,7 @@ export function renderCloudSprite(
       }
       const trans = Math.exp(-occ * 0.95);
 
-      const alpha = clamp01(d * 2.3);
+      const alpha = clamp01(d * 2.7);
       const thin = 1 - alpha; // translucent fringes
 
       // deep body -> shadow, lit crowns -> bright, fringes pick up sun colour

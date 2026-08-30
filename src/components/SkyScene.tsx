@@ -466,6 +466,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       }
 
       drawHills(palette, w, h);
+      drawFilmGrade(w, h);
       ctx.restore();
 
       // spawn timers

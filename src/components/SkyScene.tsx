@@ -4,13 +4,6 @@ import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
-import {
-  drawBalloon,
-  drawGeese,
-  drawPlane,
-  preloadSkySprites,
-  type Entity,
-} from "@/lib/sky/entities";
 import { randomSeed } from "@/lib/sky/rng";
 
 type SkyCloud = {
@@ -41,7 +34,6 @@ const DAY_LENGTH_SECONDS = 720;
 export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cloudsRef = useRef<SkyCloud[]>([]);
-  const entitiesRef = useRef<Entity[]>([]);
   const floatersRef = useRef<Floater[]>([]);
   const windRef = useRef(0);
   const gustEnergyRef = useRef(0);
@@ -57,7 +49,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const sizeRef = useRef({ w: 1200, h: 800 });
   const audioRef = useRef<SkyAudio | null>(null);
   const nextIdRef = useRef(1);
-  const spawnTimersRef = useRef({ geese: 22, balloon: 55, plane: 80, chirp: 12 });
+  const spawnTimersRef = useRef({ chirp: 12 });
 
   const [selected, setSelected] = useState<{ id: number; seed: CloudSeed } | null>(null);
   const [caption, setCaption] = useState("");
@@ -87,45 +79,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     cloudsRef.current.push(cloud);
   }, []);
 
-  const spawnEntity = useCallback((kind: Entity["kind"]) => {
-    const { w, h } = sizeRef.current;
-    const rightward = Math.random() > 0.35;
-    const dir = rightward ? 1 : -1;
-    const startX = rightward ? -80 : w + 80;
-    if (kind === "geese") {
-      entitiesRef.current.push({
-        kind: "geese",
-        x: startX,
-        y: h * (0.14 + Math.random() * 0.35),
-        vx: dir * (52 + Math.random() * 30),
-        vy: (Math.random() - 0.5) * 6,
-        count: 5 + Math.floor(Math.random() * 8),
-        scale: 2.6 + Math.random() * 3.2,
-        phase: Math.random() * 6,
-        honkAt: 1 + Math.random() * 4,
-      });
-    } else if (kind === "balloon") {
-      entitiesRef.current.push({
-        kind: "balloon",
-        x: startX,
-        y: h * (0.45 + Math.random() * 0.3),
-        vx: dir * (12 + Math.random() * 10),
-        vy: -2 - Math.random() * 3,
-        scale: 22 + Math.random() * 18,
-        hueShift: Math.random() * 360,
-        burnerAt: 3 + Math.random() * 6,
-      });
-    } else {
-      entitiesRef.current.push({
-        kind: "plane",
-        x: startX,
-        y: h * (0.06 + Math.random() * 0.2),
-        vx: dir * (95 + Math.random() * 45),
-        scale: 3.5 + Math.random() * 2,
-        trail: [],
-      });
-    }
-  }, []);
+
+
 
   const cloudAt = useCallback((px: number, py: number) => {
     const list = cloudsRef.current;
@@ -183,7 +138,6 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     resize();
     window.addEventListener("resize", resize);
 
-    preloadSkySprites();
 
     if (cloudsRef.current.length === 0) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
@@ -412,37 +366,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         ctx.globalAlpha = 1;
       }
 
-      // entities
-      const ents = entitiesRef.current;
-      for (let i = ents.length - 1; i >= 0; i--) {
-        const e = ents[i]!;
-        if (e.kind === "geese") {
-          e.x += (e.vx + wind * 120) * dt;
-          e.y += e.vy * dt + Math.sin(t * 0.7) * 0.25;
-          e.honkAt -= dt;
-          if (e.honkAt <= 0) {
-            e.honkAt = 4 + Math.random() * 7;
-            audioRef.current?.honk();
-          }
-          drawGeese(ctx, e, palette, t);
-        } else if (e.kind === "balloon") {
-          e.x += (e.vx + wind * 90) * dt;
-          e.y += e.vy * dt;
-          e.burnerAt -= dt;
-          if (e.burnerAt <= 0) {
-            e.burnerAt = 6 + Math.random() * 8;
-            audioRef.current?.burner();
-          }
-          drawBalloon(ctx, e, palette);
-        } else {
-          e.x += (e.vx + wind * 60) * dt;
-          if (Math.random() < 0.6) e.trail.push({ x: e.x, y: e.y, age: 0 });
-          for (const seg of e.trail) seg.age += dt * 1.2;
-          e.trail = e.trail.filter((s) => s.age < 26).slice(-260);
-          drawPlane(ctx, e, palette);
-        }
-        if (e.x < -400 || e.x > w + 400 || e.y < -300) ents.splice(i, 1);
-      }
+
+
 
       // caption floaters
       const floaters = floatersRef.current;
@@ -473,22 +398,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
 
       // spawn timers
       const timers = spawnTimersRef.current;
-      timers.geese -= dt;
-      timers.balloon -= dt;
-      timers.plane -= dt;
       timers.chirp -= dt;
-      if (timers.geese <= 0) {
-        timers.geese = 45 + Math.random() * 70;
-        spawnEntity("geese");
-      }
-      if (timers.balloon <= 0) {
-        timers.balloon = 90 + Math.random() * 140;
-        spawnEntity("balloon");
-      }
-      if (timers.plane <= 0) {
-        timers.plane = 70 + Math.random() * 130;
-        spawnEntity("plane");
-      }
       if (timers.chirp <= 0) {
         timers.chirp = 9 + Math.random() * 20;
         audioRef.current?.chirp();
@@ -507,7 +417,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       window.clearInterval(label);
       window.removeEventListener("resize", resize);
     };
-  }, [spawnCloud, spawnEntity]);
+  }, [spawnCloud]);
 
   useEffect(() => {
     audioRef.current = new SkyAudio();

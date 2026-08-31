@@ -87,45 +87,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     cloudsRef.current.push(cloud);
   }, []);
 
-  const spawnEntity = useCallback((kind: Entity["kind"]) => {
-    const { w, h } = sizeRef.current;
-    const rightward = Math.random() > 0.35;
-    const dir = rightward ? 1 : -1;
-    const startX = rightward ? -80 : w + 80;
-    if (kind === "geese") {
-      entitiesRef.current.push({
-        kind: "geese",
-        x: startX,
-        y: h * (0.14 + Math.random() * 0.35),
-        vx: dir * (52 + Math.random() * 30),
-        vy: (Math.random() - 0.5) * 6,
-        count: 5 + Math.floor(Math.random() * 8),
-        scale: 2.6 + Math.random() * 3.2,
-        phase: Math.random() * 6,
-        honkAt: 1 + Math.random() * 4,
-      });
-    } else if (kind === "balloon") {
-      entitiesRef.current.push({
-        kind: "balloon",
-        x: startX,
-        y: h * (0.45 + Math.random() * 0.3),
-        vx: dir * (12 + Math.random() * 10),
-        vy: -2 - Math.random() * 3,
-        scale: 22 + Math.random() * 18,
-        hueShift: Math.random() * 360,
-        burnerAt: 3 + Math.random() * 6,
-      });
-    } else {
-      entitiesRef.current.push({
-        kind: "plane",
-        x: startX,
-        y: h * (0.06 + Math.random() * 0.2),
-        vx: dir * (95 + Math.random() * 45),
-        scale: 3.5 + Math.random() * 2,
-        trail: [],
-      });
-    }
-  }, []);
+
+
 
   const cloudAt = useCallback((px: number, py: number) => {
     const list = cloudsRef.current;

@@ -412,37 +412,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         ctx.globalAlpha = 1;
       }
 
-      // entities
-      const ents = entitiesRef.current;
-      for (let i = ents.length - 1; i >= 0; i--) {
-        const e = ents[i]!;
-        if (e.kind === "geese") {
-          e.x += (e.vx + wind * 120) * dt;
-          e.y += e.vy * dt + Math.sin(t * 0.7) * 0.25;
-          e.honkAt -= dt;
-          if (e.honkAt <= 0) {
-            e.honkAt = 4 + Math.random() * 7;
-            audioRef.current?.honk();
-          }
-          drawGeese(ctx, e, palette, t);
-        } else if (e.kind === "balloon") {
-          e.x += (e.vx + wind * 90) * dt;
-          e.y += e.vy * dt;
-          e.burnerAt -= dt;
-          if (e.burnerAt <= 0) {
-            e.burnerAt = 6 + Math.random() * 8;
-            audioRef.current?.burner();
-          }
-          drawBalloon(ctx, e, palette);
-        } else {
-          e.x += (e.vx + wind * 60) * dt;
-          if (Math.random() < 0.6) e.trail.push({ x: e.x, y: e.y, age: 0 });
-          for (const seg of e.trail) seg.age += dt * 1.2;
-          e.trail = e.trail.filter((s) => s.age < 26).slice(-260);
-          drawPlane(ctx, e, palette);
-        }
-        if (e.x < -400 || e.x > w + 400 || e.y < -300) ents.splice(i, 1);
-      }
+
+
 
       // caption floaters
       const floaters = floatersRef.current;

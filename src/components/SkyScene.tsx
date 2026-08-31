@@ -254,38 +254,6 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       ctx.fillRect(0, 0, w, h);
     };
 
-    const drawHills = (p: SkyPalette, w: number, h: number) => {
-      const base = h * 0.93;
-      ctx.save();
-      ctx.fillStyle = css(p.cloudShadow, 0.35);
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-      ctx.lineTo(0, base + 8);
-      for (let x = 0; x <= w; x += 24) {
-        const y =
-          base +
-          Math.sin(x * 0.004) * 14 +
-          Math.sin(x * 0.011 + 1.7) * 7 +
-          Math.sin(x * 0.0021) * 10;
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(w, h);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = css(p.cloudShadow, 0.72);
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-      ctx.lineTo(0, base + 34);
-      for (let x = 0; x <= w; x += 20) {
-        const y = base + 34 + Math.sin(x * 0.006 + 2.3) * 10 + Math.sin(x * 0.017) * 4;
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(w, h);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    };
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -392,7 +360,6 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         ctx.restore();
       }
 
-      drawHills(palette, w, h);
       drawFilmGrade(w, h);
       ctx.restore();
 

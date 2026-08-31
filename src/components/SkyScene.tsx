@@ -473,22 +473,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
 
       // spawn timers
       const timers = spawnTimersRef.current;
-      timers.geese -= dt;
-      timers.balloon -= dt;
-      timers.plane -= dt;
       timers.chirp -= dt;
-      if (timers.geese <= 0) {
-        timers.geese = 45 + Math.random() * 70;
-        spawnEntity("geese");
-      }
-      if (timers.balloon <= 0) {
-        timers.balloon = 90 + Math.random() * 140;
-        spawnEntity("balloon");
-      }
-      if (timers.plane <= 0) {
-        timers.plane = 70 + Math.random() * 130;
-        spawnEntity("plane");
-      }
       if (timers.chirp <= 0) {
         timers.chirp = 9 + Math.random() * 20;
         audioRef.current?.chirp();

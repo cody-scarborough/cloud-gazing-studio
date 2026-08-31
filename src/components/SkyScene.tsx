@@ -4,13 +4,6 @@ import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
-import {
-  drawBalloon,
-  drawGeese,
-  drawPlane,
-  preloadSkySprites,
-  type Entity,
-} from "@/lib/sky/entities";
 import { randomSeed } from "@/lib/sky/rng";
 
 type SkyCloud = {
@@ -41,7 +34,6 @@ const DAY_LENGTH_SECONDS = 720;
 export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cloudsRef = useRef<SkyCloud[]>([]);
-  const entitiesRef = useRef<Entity[]>([]);
   const floatersRef = useRef<Floater[]>([]);
   const windRef = useRef(0);
   const gustEnergyRef = useRef(0);
@@ -57,7 +49,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const sizeRef = useRef({ w: 1200, h: 800 });
   const audioRef = useRef<SkyAudio | null>(null);
   const nextIdRef = useRef(1);
-  const spawnTimersRef = useRef({ geese: 22, balloon: 55, plane: 80, chirp: 12 });
+  const spawnTimersRef = useRef({ chirp: 12 });
 
   const [selected, setSelected] = useState<{ id: number; seed: CloudSeed } | null>(null);
   const [caption, setCaption] = useState("");
@@ -146,7 +138,6 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     resize();
     window.addEventListener("resize", resize);
 
-    preloadSkySprites();
 
     if (cloudsRef.current.length === 0) {
       for (let i = 0; i < 7; i++) spawnCloud(false);
@@ -426,7 +417,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       window.clearInterval(label);
       window.removeEventListener("resize", resize);
     };
-  }, [spawnCloud, spawnEntity]);
+  }, [spawnCloud]);
 
   useEffect(() => {
     audioRef.current = new SkyAudio();

@@ -209,17 +209,23 @@ export function renderCloudSprite(
   const warpAmp = Math.max(3, boxW * scale * 0.055);
   const drift = morph * 0.08;
 
+  const flatBase = seed.kind !== "fractus";
+
   for (let y = 0; y < gh; y++) {
+    const vy = y / gh;
     for (let x = 0; x < gw; x++) {
-      const nxa = fbm((x + nOffX) * freq * 1.35, (y + nOffY) * freq * 1.35 + drift, 3, seed.seed);
+      // two-level domain warp: broad lobes displaced, then curled again finer
+      const nxa = fbm((x + nOffX) * freq * 1.15, (y + nOffY) * freq * 1.15 + drift, 4, seed.seed);
       const nya = fbm(
-        (x + nOffX + 133) * freq * 1.35,
-        (y + nOffY + 71) * freq * 1.35 - drift,
-        3,
+        (x + nOffX + 133) * freq * 1.15,
+        (y + nOffY + 71) * freq * 1.15 - drift,
+        4,
         seed.seed + 17,
       );
-      const wx = x + (nxa - 0.5) * warpAmp * 2;
-      const wy = y + (nya - 0.5) * warpAmp * 1.35;
+      const cx = fbm((x + nOffX + 41) * freq * 3.6, (y + nOffY + 19) * freq * 3.6, 3, seed.seed + 31);
+      const cy = fbm((x + nOffX + 87) * freq * 3.6, (y + nOffY + 53) * freq * 3.6, 3, seed.seed + 43);
+      const wx = x + (nxa - 0.5) * warpAmp * 2.1 + (cx - 0.5) * warpAmp * 0.7;
+      const wy = y + (nya - 0.5) * warpAmp * 1.45 + (cy - 0.5) * warpAmp * 0.55;
 
       let f = 0;
       for (let i = 0; i < puffs.length; i++) {
@@ -234,13 +240,19 @@ export function renderCloudSprite(
       }
       if (f <= 0.001) continue;
 
-      // fractal erosion: billows on top, dissolving shreds at the fringes
-      const det = fbm((x + nOffX) * freq * 4.4, (y + nOffY) * freq * 4.4 + drift * 2, 4, seed.seed + 5);
-      const fine = valueNoise((x + nOffX) * freq * 11, (y + nOffY) * freq * 11, seed.seed + 9);
-      let d = f * (0.78 + det * 0.5) - 0.11 + (fine - 0.5) * 0.05;
+      // fractal erosion: cauliflower billows on the crowns, shredded fringes,
+      // and a firmer, flatter cut along the condensation base
+      const det = fbm((x + nOffX) * freq * 4.4, (y + nOffY) * freq * 4.4 + drift * 2, 5, seed.seed + 5);
+      const micro = fbm((x + nOffX) * freq * 10.5, (y + nOffY) * freq * 10.5, 3, seed.seed + 61);
+      const fine = valueNoise((x + nOffX) * freq * 22, (y + nOffY) * freq * 22, seed.seed + 9);
+      const crown = 1 - vy; // erode top edges harder than the body
+      const erode = 0.11 + crown * 0.05 + (flatBase ? Math.max(0, vy - 0.8) * 0.45 : 0);
+      let d =
+        f * (0.74 + det * 0.5 + (micro - 0.5) * 0.16) - erode + (fine - 0.5) * 0.045;
       if (d > 0) density[y * gw + x] = d;
     }
   }
+
 
   const image = ctx.createImageData(gw, gh);
   const data = image.data;

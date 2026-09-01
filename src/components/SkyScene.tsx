@@ -66,7 +66,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       id: nextIdRef.current++,
       seed,
       x: offscreen ? -width * 1.4 : Math.random() * (w + width) - width * 0.5,
-      y: h * (0.04 + Math.random() * 0.52) * (1.1 - depth * 0.25),
+      y: h * (0.05 + Math.random() * 0.68) * (1.05 - depth * 0.18),
       width,
       depth,
       morph: Math.random() * 40,
@@ -157,7 +157,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         img.data[i] = v;
         img.data[i + 1] = v;
         img.data[i + 2] = v;
-        img.data[i + 3] = 26;
+        img.data[i + 3] = 16;
       }
       gc.putImageData(img, 0, 0);
       return ctx.createPattern(g, "repeat");
@@ -172,8 +172,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           Math.round(a[1] + (b[1] - a[1]) * k),
           Math.round(a[2] + (b[2] - a[2]) * k),
         ]);
-      for (let i = 0; i <= 8; i++) {
-        const s = i / 8;
+      for (let i = 0; i <= 16; i++) {
+        const s = i / 16;
         const k = Math.pow(s, 1.8);
         const color = k < 0.5 ? mixTo(p.zenith, p.mid, k * 2) : mixTo(p.mid, p.horizon, (k - 0.5) * 2);
         grad.addColorStop(s, color);
@@ -235,7 +235,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       if (!grainPattern) grainPattern = makeGrain();
       if (grainPattern) {
         ctx.save();
-        ctx.globalAlpha = 0.32;
+        ctx.globalAlpha = 0.22;
         ctx.fillStyle = grainPattern;
         ctx.fillRect(0, 0, w, h);
         ctx.restore();
@@ -303,7 +303,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           c.named = false;
           c.width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + c.depth * 0.7);
           c.x = -c.width * 1.3;
-          c.y = h * (0.04 + Math.random() * 0.52) * (1.1 - c.depth * 0.25);
+          c.y = h * (0.05 + Math.random() * 0.68) * (1.05 - c.depth * 0.18);
           c.fade = 0;
         }
 
@@ -314,6 +314,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
             sunDir,
             stretch,
             detail: 0.45 + c.depth * 0.55,
+            haze: (1 - c.depth) * 0.4,
+            hazeColor: palette.mid,
           });
           c.spriteKey = key;
           renderBudget--;

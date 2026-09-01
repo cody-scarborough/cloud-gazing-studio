@@ -270,28 +270,36 @@ export function renderCloudSprite(
   const [sunR, sunG, sunB] = palette.sun;
   const [ambR, ambG, ambB] = palette.mid;
 
-  const STEPS = 7;
+  const haze = options.haze ?? 0;
+  const [hzR, hzG, hzB] = options.hazeColor ?? palette.mid;
+
+  const STEPS = 12;
   for (let y = 0; y < gh; y++) {
     for (let x = 0; x < gw; x++) {
       const idx = y * gw + x;
       const d = density[idx]!;
       if (d <= 0) continue;
 
-      // march toward the light accumulating optical depth
+      // march toward the light accumulating optical depth (cone-widening steps)
       let occ = 0;
       for (let s = 1; s <= STEPS; s++) {
-        const sx = Math.round(x + stepX * s);
-        const sy = Math.round(y + stepY * s);
+        const g = s * (1 + s * 0.14);
+        const sx = Math.round(x + stepX * g);
+        const sy = Math.round(y + stepY * g);
         if (sx < 0 || sy < 0 || sx >= gw || sy >= gh) break;
-        occ += density[sy * gw + sx]! * (1 - (s - 1) / (STEPS * 1.6));
+        occ += density[sy * gw + sx]! * (1 - (s - 1) / (STEPS * 1.5));
       }
-      const trans = Math.exp(-occ * 1.9);
+      // Beer–Powder: exponential extinction plus the dark-edge powder term that
+      // gives real cumulus their crisp, slightly sooty crevices
+      const beer = Math.exp(-occ * 1.75);
+      const powder = 1 - Math.exp(-occ * 3.2);
+      const trans = beer * (0.55 + 0.45 * powder * 1.35);
 
-      const alpha = clamp01(d * 2.7);
+      const alpha = clamp01(Math.pow(clamp01(d * 2.45), 0.82));
       const thin = 1 - alpha; // translucent fringes
 
       // deep body -> shadow, lit crowns -> bright, fringes pick up sun colour
-      const litMix = clamp01(Math.pow(trans, 0.75) * 1.05);
+      const litMix = clamp01(Math.pow(clamp01(trans), 0.72) * 1.08);
       let r = sr + (lr - sr) * litMix;
       let g = sg + (lg - sg) * litMix;
       let b = sb + (lb - sb) * litMix;
@@ -302,25 +310,39 @@ export function renderCloudSprite(
       g = g + (mg - g) * mid * 0.5;
       b = b + (mb - b) * mid * 0.5;
 
-      // ambient sky bounce on the underside
-      const under = clamp01((y / gh - 0.55) * 1.6) * 0.28;
+      // ambient sky bounce on the underside, cool and blue like real shade
+      const under = clamp01((y / gh - 0.5) * 1.7) * 0.34;
       r += (ambR - r) * under;
       g += (ambG - g) * under;
       b += (ambB - b) * under;
 
-      // forward-scattered sunlight through thin edges
-      const glow = thin * trans * 0.45;
+      // multiple scattering: dense interiors stay luminous rather than muddy
+      const ms = clamp01(d * 0.5) * 0.16;
+      r += (mr - r) * ms;
+      g += (mg - g) * ms;
+      b += (mb - b) * ms;
+
+      // forward-scattered sunlight and silver lining through thin edges
+      const glow = thin * beer * 0.55 + Math.pow(thin, 3) * beer * 0.35;
       r += (sunR - r) * glow;
       g += (sunG - g) * glow;
       b += (sunB - b) * glow;
+
+      // aerial perspective: distant clouds wash into the sky's haze
+      if (haze > 0) {
+        r += (hzR - r) * haze;
+        g += (hzG - g) * haze;
+        b += (hzB - b) * haze;
+      }
 
       const o = idx * 4;
       data[o] = r;
       data[o + 1] = g;
       data[o + 2] = b;
-      data[o + 3] = Math.round(alpha * 255);
+      data[o + 3] = Math.round(alpha * (1 - haze * 0.35) * 255);
     }
   }
+
 
   const field = document.createElement("canvas");
   field.width = gw;

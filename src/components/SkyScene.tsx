@@ -66,7 +66,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       id: nextIdRef.current++,
       seed,
       x: offscreen ? -width * 1.4 : Math.random() * (w + width) - width * 0.5,
-      y: h * (0.04 + Math.random() * 0.52) * (1.1 - depth * 0.25),
+      y: h * (0.05 + Math.random() * 0.68) * (1.05 - depth * 0.18),
       width,
       depth,
       morph: Math.random() * 40,
@@ -303,7 +303,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           c.named = false;
           c.width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + c.depth * 0.7);
           c.x = -c.width * 1.3;
-          c.y = h * (0.04 + Math.random() * 0.52) * (1.1 - c.depth * 0.25);
+          c.y = h * (0.05 + Math.random() * 0.68) * (1.05 - c.depth * 0.18);
           c.fade = 0;
         }
 

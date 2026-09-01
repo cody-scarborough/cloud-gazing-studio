@@ -150,7 +150,12 @@ type RenderOptions = {
   opacity?: number;
   /** 0..1, lower = coarser field for distant clouds */
   detail?: number;
+  /** 0..1 aerial perspective: how much the cloud washes into the sky */
+  haze?: number;
+  /** colour the haze fades toward (defaults to palette mid) */
+  hazeColor?: [number, number, number];
 };
+
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 

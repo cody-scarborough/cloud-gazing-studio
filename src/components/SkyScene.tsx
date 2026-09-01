@@ -157,7 +157,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         img.data[i] = v;
         img.data[i + 1] = v;
         img.data[i + 2] = v;
-        img.data[i + 3] = 26;
+        img.data[i + 3] = 16;
       }
       gc.putImageData(img, 0, 0);
       return ctx.createPattern(g, "repeat");
@@ -172,8 +172,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           Math.round(a[1] + (b[1] - a[1]) * k),
           Math.round(a[2] + (b[2] - a[2]) * k),
         ]);
-      for (let i = 0; i <= 8; i++) {
-        const s = i / 8;
+      for (let i = 0; i <= 16; i++) {
+        const s = i / 16;
         const k = Math.pow(s, 1.8);
         const color = k < 0.5 ? mixTo(p.zenith, p.mid, k * 2) : mixTo(p.mid, p.horizon, (k - 0.5) * 2);
         grad.addColorStop(s, color);
@@ -235,7 +235,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       if (!grainPattern) grainPattern = makeGrain();
       if (grainPattern) {
         ctx.save();
-        ctx.globalAlpha = 0.32;
+        ctx.globalAlpha = 0.22;
         ctx.fillStyle = grainPattern;
         ctx.fillRect(0, 0, w, h);
         ctx.restore();
@@ -314,6 +314,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
             sunDir,
             stretch,
             detail: 0.45 + c.depth * 0.55,
+            haze: (1 - c.depth) * 0.4,
+            hazeColor: palette.mid,
           });
           c.spriteKey = key;
           renderBudget--;

@@ -190,7 +190,7 @@ export function renderCloudSprite(
 
   // work at a reduced resolution, then upscale — the upscale doubles as the
   // final softening pass
-  const maxField = Math.round(300 * (0.55 + detail * 0.45));
+  const maxField = Math.round(460 * (0.5 + detail * 0.5));
   const scale = Math.min(1, maxField / cw);
   const gw = Math.max(8, Math.round(cw * scale));
   const gh = Math.max(8, Math.round(ch * scale));

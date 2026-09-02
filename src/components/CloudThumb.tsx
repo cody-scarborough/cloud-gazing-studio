@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { renderCloudSprite, type CloudSeed } from "@/lib/sky/cloud";
-import { css, paletteAt } from "@/lib/sky/palette";
+import { paletteAt } from "@/lib/sky/palette";
+import { drawSkyBackdrop } from "@/lib/sky/backdrop";
 
 export function CloudThumb({
   seed,
@@ -33,15 +34,11 @@ export function CloudThumb({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const palette = paletteAt(skyTime);
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, css(palette.zenith));
-      grad.addColorStop(0.6, css(palette.mid));
-      grad.addColorStop(1, css(palette.horizon));
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
+      drawSkyBackdrop(ctx, palette, w, h);
 
-      const sprite = renderCloudSprite(seed, w * 0.7, palette, seed.seed % 17, {
+      const sprite = renderCloudSprite(seed, w * 0.7, palette, 0, {
         sunDir: palette.sunX < 0.5 ? -1 : 1,
+        detail: 1,
       });
       const scale = Math.min((w * 0.86) / sprite.width, (h * 0.86) / sprite.height);
       const dw = sprite.width * scale;

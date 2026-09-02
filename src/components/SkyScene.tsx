@@ -287,7 +287,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
 
       for (const c of list) {
         const selectedThis = selectedRef.current === c.id;
-        c.morph += dt * (0.16 + wind * 0.5);
+        c.morph += dt * 0.16;
         c.fade = Math.min(1, c.fade + dt * 0.5);
 
         const speed = (7 + c.depth * 16 + wind * 190 * c.depth) * (selectedThis ? 0.06 : 1);
@@ -307,8 +307,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           c.fade = 0;
         }
 
-        const stretch = 1 + Math.min(0.35, wind * 0.32);
-        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 1.6)}|${Math.round(stretch * 12)}`;
+        const stretch = 1;
+        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 1.6)}`;
         if (key !== c.spriteKey && renderBudget > 0) {
           c.sprite = renderCloudSprite(c.seed, c.width, palette, c.morph, {
             sunDir,

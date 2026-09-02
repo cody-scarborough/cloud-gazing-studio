@@ -308,13 +308,15 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         }
 
         const stretch = 1;
-        const key = `${Math.round(c.width)}|${paletteBucket}|${Math.floor(c.morph * 1.6)}`;
+        // a selected cloud is rendered exactly the way the gallery/journal
+        // thumbnail will render it, so the saved card matches what you saw
+        const key = `${Math.round(c.width)}|${paletteBucket}|${selectedThis ? "sel" : "amb"}`;
         if (key !== c.spriteKey && renderBudget > 0) {
-          c.sprite = renderCloudSprite(c.seed, c.width, palette, c.morph, {
+          c.sprite = renderCloudSprite(c.seed, c.width, palette, 0, {
             sunDir,
             stretch,
-            detail: 0.45 + c.depth * 0.55,
-            haze: (1 - c.depth) * 0.4,
+            detail: selectedThis ? 1 : 0.45 + c.depth * 0.55,
+            haze: selectedThis ? 0 : (1 - c.depth) * 0.4,
             hazeColor: palette.mid,
           });
           c.spriteKey = key;
@@ -323,7 +325,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         if (!c.sprite) continue;
 
         const pad = Math.round(c.width * SPRITE_PAD_RATIO);
-        const alpha = c.fade * (0.72 + c.depth * 0.28);
+        const alpha = selectedThis ? c.fade : c.fade * (0.72 + c.depth * 0.28);
         ctx.globalAlpha = alpha;
         ctx.drawImage(c.sprite, c.x - pad, c.y - pad);
 

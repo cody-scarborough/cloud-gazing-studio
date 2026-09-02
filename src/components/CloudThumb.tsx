@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { renderCloudSprite, type CloudSeed } from "@/lib/sky/cloud";
-import { css, paletteAt } from "@/lib/sky/palette";
+import { paletteAt } from "@/lib/sky/palette";
+import { drawSkyBackdrop } from "@/lib/sky/backdrop";
 
 export function CloudThumb({
   seed,

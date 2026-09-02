@@ -4,6 +4,7 @@ import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
+import { drawSkyBackdrop } from "@/lib/sky/backdrop";
 import { randomSeed } from "@/lib/sky/rng";
 
 type SkyCloud = {

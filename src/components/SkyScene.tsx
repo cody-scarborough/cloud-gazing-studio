@@ -362,7 +362,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       window.clearInterval(label);
       window.removeEventListener("resize", resize);
     };
-  }, [spawnCloud]);
+  }, [spawnCloud, placeCloud]);
 
   useEffect(() => {
     audioRef.current = new SkyAudio();

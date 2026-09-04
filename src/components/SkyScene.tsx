@@ -58,20 +58,31 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const [phase, setPhase] = useState("Morning");
   const [windLevel, setWindLevel] = useState(0);
 
+  // Real skies are a perspective field: clouds near the horizon are small,
+  // low, pale and slow; clouds overhead are large, high, crisp and fast.
+  // depth 0 = far horizon, 1 = directly overhead.
+  const placeCloud = useCallback((depth: number, w: number, h: number) => {
+    const sizeVar = 0.72 + Math.random() * 0.62;
+    const width = w * (0.055 + Math.pow(depth, 1.7) * 0.4) * sizeVar;
+    // vertical band follows the horizon: far clouds stack low, near clouds ride high
+    const band = 0.74 - Math.pow(depth, 0.85) * 0.66;
+    const jitter = (Math.random() - 0.5) * (0.05 + depth * 0.14);
+    const y = h * Math.max(0.02, band + jitter);
+    return { width, y };
+  }, []);
+
   const spawnCloud = useCallback((offscreen: boolean) => {
     const { w, h } = sizeRef.current;
-    const depth = 0.35 + Math.random() * 0.65;
-    // occasional giants and small scraps break up the uniform sizing
-    const roll = Math.random();
-    const sizeMul = roll < 0.16 ? 1.5 + Math.random() * 0.8 : roll > 0.82 ? 0.45 + Math.random() * 0.25 : 0.8 + Math.random() * 0.5;
-    const width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + depth * 0.7) * sizeMul;
+    // skew toward distance so the horizon reads crowded and the sky feels deep
+    const depth = Math.pow(Math.random(), 1.45);
+    const { width, y } = placeCloud(depth, w, h);
 
     const seed = makeCloudSeed(randomSeed());
     const cloud: SkyCloud = {
       id: nextIdRef.current++,
       seed,
       x: offscreen ? -width * 1.4 : Math.random() * (w + width) - width * 0.5,
-      y: h * (0.05 + Math.random() * 0.68) * (1.05 - depth * 0.18),
+      y,
       width,
       depth,
       morph: Math.random() * 40,
@@ -82,7 +93,10 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       fade: offscreen ? 0 : 1,
     };
     cloudsRef.current.push(cloud);
-  }, []);
+    // keep painter's order: distant clouds behind nearer ones
+    cloudsRef.current.sort((a, b) => a.depth - b.depth);
+  }, [placeCloud]);
+
 
 
 

@@ -392,11 +392,12 @@ export function renderCloudSprite(
       }
       // Beer–Powder: exponential extinction plus the dark-edge powder term that
       // gives real cumulus their crisp, slightly sooty crevices
-      const beer = Math.exp(-occ * 1.75);
-      const powder = 1 - Math.exp(-occ * 3.2);
+      const beer = Math.exp(-occ * st.dense);
+      const powder = 1 - Math.exp(-occ * st.dense * 1.85);
       const trans = beer * (0.55 + 0.45 * powder * 1.35);
 
-      const alpha = clamp01(Math.pow(clamp01(d * 2.45), 0.82));
+      const alpha = clamp01(Math.pow(clamp01(d * (1.9 + st.dense * 0.35)), 0.82));
+
       const thin = 1 - alpha; // translucent fringes
 
       // deep body -> shadow, lit crowns -> bright, fringes pick up sun colour

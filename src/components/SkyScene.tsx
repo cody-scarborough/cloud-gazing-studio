@@ -20,6 +20,7 @@ type SkyCloud = {
   spriteKey: string;
   named: boolean;
   fade: number;
+  squash: number;
 };
 
 type Floater = { text: string; x: number; y: number; vx: number; life: number };
@@ -91,6 +92,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       spriteKey: "",
       named: false,
       fade: offscreen ? 0 : 1,
+      squash: 0.62 + Math.pow(depth, 0.8) * 0.38,
     };
     cloudsRef.current.push(cloud);
     // keep painter's order: distant clouds behind nearer ones
@@ -108,8 +110,9 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       if (c.fade < 0.4) continue;
       const puffs = puffPixels(c.seed, c.width, c.morph);
       for (const p of puffs) {
+        const sq = selectedRef.current === c.id ? 1 : c.squash;
         const dx = px - (c.x + p.x);
-        const dy = py - (c.y + p.y);
+        const dy = (py - c.y) / sq - p.y;
         if (dx * dx + dy * dy < p.r * p.r * 1.05) return c;
       }
     }
@@ -159,7 +162,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
 
 
     if (cloudsRef.current.length === 0) {
-      for (let i = 0; i < 7; i++) spawnCloud(false);
+      for (let i = 0; i < 13; i++) spawnCloud(false);
     }
 
     // fine film grain, built once and tiled — keeps the sky from banding
@@ -224,7 +227,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       audioRef.current?.setWind(Math.min(1, wind));
 
       gustEnergyRef.current += wind * dt;
-      if (gustEnergyRef.current > 1.1 && cloudsRef.current.length < 16) {
+      if (gustEnergyRef.current > 1.1 && cloudsRef.current.length < 22) {
         gustEnergyRef.current = 0;
         spawnCloud(true);
       }
@@ -255,10 +258,14 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         if (c.x > w + c.width * 0.6) {
           c.seed = makeCloudSeed(randomSeed());
           c.named = false;
-          c.width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + c.depth * 0.7);
+          c.depth = Math.pow(Math.random(), 1.45);
+          const placed = placeCloud(c.depth, w, h);
+          c.width = placed.width;
+          c.y = placed.y;
           c.x = -c.width * 1.3;
-          c.y = h * (0.05 + Math.random() * 0.68) * (1.05 - c.depth * 0.18);
+          c.squash = 0.62 + Math.pow(c.depth, 0.8) * 0.38;
           c.fade = 0;
+          c.spriteKey = "";
         }
 
         const stretch = 1;
@@ -269,8 +276,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           c.sprite = renderCloudSprite(c.seed, c.width, palette, 0, {
             sunDir,
             stretch,
-            detail: selectedThis ? 1 : 0.45 + c.depth * 0.55,
-            haze: selectedThis ? 0 : (1 - c.depth) * 0.4,
+            detail: selectedThis ? 1 : 0.4 + c.depth * 0.6,
+            haze: selectedThis ? 0 : Math.pow(1 - c.depth, 1.2) * 0.78,
             hazeColor: palette.mid,
           });
           c.spriteKey = key;
@@ -279,14 +286,27 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         if (!c.sprite) continue;
 
         const pad = Math.round(c.width * SPRITE_PAD_RATIO);
-        const alpha = selectedThis ? c.fade : c.fade * (0.72 + c.depth * 0.28);
+        // perspective foreshortening: distant clouds flatten toward the horizon
+        const squash = selectedThis ? 1 : c.squash;
+        const alpha = selectedThis ? c.fade : c.fade * (0.5 + c.depth * 0.5);
         ctx.globalAlpha = alpha;
-        ctx.drawImage(c.sprite, c.x - pad, c.y - pad);
+        const drawSprite = () => {
+          if (squash === 1) {
+            ctx.drawImage(c.sprite!, c.x - pad, c.y - pad);
+          } else {
+            ctx.save();
+            ctx.translate(0, c.y - pad);
+            ctx.scale(1, squash);
+            ctx.drawImage(c.sprite!, c.x - pad, 0);
+            ctx.restore();
+          }
+        };
+        drawSprite();
 
         if (hoverRef.current === c.id || selectedThis) {
           ctx.globalAlpha = alpha * (selectedThis ? 0.16 : 0.1);
           ctx.globalCompositeOperation = "lighter";
-          ctx.drawImage(c.sprite, c.x - pad, c.y - pad);
+          drawSprite();
           ctx.globalCompositeOperation = "source-over";
         }
         ctx.globalAlpha = 1;

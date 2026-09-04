@@ -297,15 +297,16 @@ export function renderCloudSprite(
     r: Math.max(1.2, p.r * scale),
   }));
 
+  const st = styleOf(seed);
   const density = new Float32Array(gw * gh);
   const nOffX = seed.nx ?? (seed.seed % 311);
   const nOffY = seed.ny ?? (seed.seed % 197);
   // noise frequency relative to cloud size so detail scale stays constant
-  const freq = 7.5 / Math.max(24, boxW * scale);
-  const warpAmp = Math.max(3, boxW * scale * 0.055);
+  const freq = (7.5 * st.freq) / Math.max(24, boxW * scale);
+  const warpAmp = Math.max(3, boxW * scale * st.warp);
   const drift = morph * 0.08;
 
-  const flatBase = seed.kind !== "fractus";
+  const flatBase = st.flat > 0.05;
 
   for (let y = 0; y < gh; y++) {
     const vy = y / gh;
@@ -342,9 +343,13 @@ export function renderCloudSprite(
       const micro = fbm((x + nOffX) * freq * 10.5, (y + nOffY) * freq * 10.5, 3, seed.seed + 61);
       const fine = valueNoise((x + nOffX) * freq * 22, (y + nOffY) * freq * 22, seed.seed + 9);
       const crown = 1 - vy; // erode top edges harder than the body
-      const erode = 0.11 + crown * 0.05 + (flatBase ? Math.max(0, vy - 0.8) * 0.45 : 0);
+      const erode =
+        st.erode + crown * 0.05 + (flatBase ? Math.max(0, vy - (0.88 - st.flat * 0.12)) * 0.5 * (0.4 + st.flat) : 0);
       let d =
-        f * (0.74 + det * 0.5 + (micro - 0.5) * 0.16) - erode + (fine - 0.5) * 0.045;
+        f * (st.gain + det * 0.5 + (micro - 0.5) * 0.16 * st.rough) -
+        erode +
+        (fine - 0.5) * 0.045 * st.rough;
+
       if (d > 0) density[y * gw + x] = d;
     }
   }

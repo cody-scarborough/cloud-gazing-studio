@@ -61,7 +61,11 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const spawnCloud = useCallback((offscreen: boolean) => {
     const { w, h } = sizeRef.current;
     const depth = 0.35 + Math.random() * 0.65;
-    const width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + depth * 0.7);
+    // occasional giants and small scraps break up the uniform sizing
+    const roll = Math.random();
+    const sizeMul = roll < 0.16 ? 1.5 + Math.random() * 0.8 : roll > 0.82 ? 0.45 + Math.random() * 0.25 : 0.8 + Math.random() * 0.5;
+    const width = (w * 0.13 + Math.random() * w * 0.2) * (0.55 + depth * 0.7) * sizeMul;
+
     const seed = makeCloudSeed(randomSeed());
     const cloud: SkyCloud = {
       id: nextIdRef.current++,

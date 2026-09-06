@@ -62,13 +62,13 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   // Real skies are a perspective field: clouds near the horizon are small,
   // low, pale and slow; clouds overhead are large, high, crisp and fast.
   // depth 0 = far horizon, 1 = directly overhead.
-  const placeCloud = useCallback((depth: number, w: number, h: number) => {
-    const sizeVar = 0.72 + Math.random() * 0.62;
-    const width = w * (0.055 + Math.pow(depth, 1.7) * 0.4) * sizeVar;
-    // vertical band follows the horizon: far clouds stack low, near clouds ride high
-    const band = 0.74 - Math.pow(depth, 0.85) * 0.66;
-    const jitter = (Math.random() - 0.5) * (0.05 + depth * 0.14);
-    const y = h * Math.max(0.02, band + jitter);
+  const placeCloud = useCallback((depth: number, w: number, h: number, aspect: number) => {
+    const sizeVar = 0.75 + Math.random() * 0.5;
+    const width = w * (0.05 + Math.pow(depth, 1.9) * 0.24) * sizeVar;
+    // cumulus share a condensation altitude, so their bases fall on one
+    // receding line: distant bases hug the horizon, near bases ride high
+    const baseFrac = 0.94 - Math.pow(depth, 0.8) * 0.72 + (Math.random() - 0.5) * 0.06;
+    const y = h * baseFrac - width * aspect;
     return { width, y };
   }, []);
 
@@ -76,9 +76,8 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
     const { w, h } = sizeRef.current;
     // skew toward distance so the horizon reads crowded and the sky feels deep
     const depth = Math.pow(Math.random(), 1.45);
-    const { width, y } = placeCloud(depth, w, h);
-
     const seed = makeCloudSeed(randomSeed());
+    const { width, y } = placeCloud(depth, w, h, seed.aspect);
     const cloud: SkyCloud = {
       id: nextIdRef.current++,
       seed,
@@ -259,7 +258,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
           c.seed = makeCloudSeed(randomSeed());
           c.named = false;
           c.depth = Math.pow(Math.random(), 1.45);
-          const placed = placeCloud(c.depth, w, h);
+          const placed = placeCloud(c.depth, w, h, c.seed.aspect);
           c.width = placed.width;
           c.y = placed.y;
           c.x = -c.width * 1.3;

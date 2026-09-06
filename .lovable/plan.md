@@ -9,8 +9,9 @@ Keep the sky’s depth and natural perspective, but make every cloud large and d
 - Reserve only a small number of clouds for the far distance, where they provide depth rather than serve as primary game targets.
 - Reduce distance haze and opacity loss so far clouds remain visibly separated from the sky while still looking softer than nearby clouds.
 - Ease the strongest vertical flattening on distant clouds, retaining perspective without making them look like faint horizontal marks.
+- Give gallery and journal thumbnails a quieter sky treatment that preserves the saved time-of-day colors but removes the prominent sun disc and bloom, keeping attention on the cloud.
 - Keep wind behavior, cloud shape generation, selection, saving, and gallery rendering unchanged.
 
 ## Validation
 - Review the live sky at desktop and the current preview size after several cloud cycles.
-- Confirm the scene retains near/mid/far depth, the smallest clouds remain easy to see and click, and distant clouds maintain readable contrast throughout the time-of-day cycle.
+- Confirm the scene retains near/mid/far depth, the smallest clouds remain easy to see and click, distant clouds maintain readable contrast throughout the time-of-day cycle, and thumbnail skies no longer compete with their clouds.

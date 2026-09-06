@@ -12,6 +12,8 @@ export type CloudKind =
   | "stratocumulus"
   | "cirrus";
 
+export type CloudArchetype = "creature" | "profile" | "winged" | "vessel" | "tree" | "reclining";
+
 /** per-cloud rendering character, so no two clouds share the same texture recipe */
 export type CloudStyle = {
   /** detail frequency multiplier */
@@ -36,6 +38,8 @@ export type CloudSeed = {
   puffs: Puff[];
   aspect: number;
   kind?: CloudKind;
+  /** hidden compositional family; guides readability but is never shown */
+  archetype?: CloudArchetype;
   style?: CloudStyle;
   /** noise offsets so two clouds never share the same fractal detail */
   nx?: number;
@@ -52,111 +56,83 @@ const pick = <T,>(rnd: () => number, items: readonly T[]): T =>
  * also picks a species and its own texture recipe, so the sky never repeats
  * the same construction twice.
  */
-export function makeCloudSeed(seed: number = randomSeed()): CloudSeed {
+const ARCHETYPES: Record<CloudArchetype, Puff[]> = {
+  creature: [
+    { x: 0.38, y: 0.57, r: 0.25 }, { x: 0.58, y: 0.5, r: 0.22 },
+    { x: 0.77, y: 0.42, r: 0.15 }, { x: 0.9, y: 0.45, r: 0.08 },
+    { x: 0.2, y: 0.5, r: 0.14 }, { x: 0.09, y: 0.4, r: 0.08 },
+    { x: 0.38, y: 0.79, r: 0.09 }, { x: 0.64, y: 0.76, r: 0.08 },
+  ],
+  profile: [
+    { x: 0.39, y: 0.51, r: 0.3 }, { x: 0.6, y: 0.36, r: 0.2 },
+    { x: 0.74, y: 0.47, r: 0.12 }, { x: 0.84, y: 0.55, r: 0.075 },
+    { x: 0.68, y: 0.65, r: 0.11 }, { x: 0.47, y: 0.77, r: 0.14 },
+    { x: 0.18, y: 0.62, r: 0.17 },
+  ],
+  winged: [
+    { x: 0.5, y: 0.54, r: 0.16 }, { x: 0.31, y: 0.48, r: 0.18 },
+    { x: 0.14, y: 0.34, r: 0.13 }, { x: 0.69, y: 0.46, r: 0.18 },
+    { x: 0.86, y: 0.3, r: 0.12 }, { x: 0.49, y: 0.71, r: 0.1 },
+  ],
+  vessel: [
+    { x: 0.25, y: 0.67, r: 0.16 }, { x: 0.46, y: 0.7, r: 0.2 },
+    { x: 0.68, y: 0.66, r: 0.17 }, { x: 0.82, y: 0.58, r: 0.1 },
+    { x: 0.5, y: 0.48, r: 0.15 }, { x: 0.51, y: 0.29, r: 0.12 },
+    { x: 0.39, y: 0.42, r: 0.12 },
+  ],
+  tree: [
+    { x: 0.5, y: 0.69, r: 0.12 }, { x: 0.49, y: 0.5, r: 0.18 },
+    { x: 0.31, y: 0.39, r: 0.2 }, { x: 0.52, y: 0.29, r: 0.24 },
+    { x: 0.73, y: 0.4, r: 0.19 }, { x: 0.19, y: 0.56, r: 0.13 },
+    { x: 0.82, y: 0.58, r: 0.12 },
+  ],
+  reclining: [
+    { x: 0.2, y: 0.59, r: 0.17 }, { x: 0.37, y: 0.52, r: 0.23 },
+    { x: 0.58, y: 0.56, r: 0.24 }, { x: 0.78, y: 0.49, r: 0.17 },
+    { x: 0.9, y: 0.39, r: 0.09 }, { x: 0.55, y: 0.35, r: 0.14 },
+    { x: 0.12, y: 0.7, r: 0.09 },
+  ],
+};
+
+export function makeCloudSeed(seed: number = randomSeed(), excluded: readonly CloudArchetype[] = []): CloudSeed {
   const rnd = mulberry32(seed);
-  const kind = pick<CloudKind>(rnd, [
-    "cumulus",
-    "cumulus",
-    "cumulus",
-    "towering",
-    "congestus",
-    "stratocumulus",
-    "fractus",
-    "cirrus",
-  ]);
+  const available = (Object.keys(ARCHETYPES) as CloudArchetype[]).filter((item) => !excluded.includes(item));
+  const archetype = pick(rnd, available.length ? available : Object.keys(ARCHETYPES) as CloudArchetype[]);
+  const kind = pick<CloudKind>(rnd, ["cumulus", "cumulus", "towering", "congestus", "stratocumulus"]);
+  const mirror = rnd() < 0.5;
+  const tilt = (rnd() - 0.5) * 0.12;
+  const xScale = 0.86 + rnd() * 0.28;
+  const yScale = 0.82 + rnd() * 0.3;
+  const raw: Puff[] = ARCHETYPES[archetype].map((p) => {
+    const px = mirror ? 1 - p.x : p.x;
+    const x = (px - 0.5) * xScale;
+    const r = p.r * (0.88 + rnd() * 0.24);
+    return { x, y: (p.y - 0.5) * yScale + x * tilt + (rnd() - 0.5) * 0.035, r };
+  });
 
-  const raw: Puff[] = [];
-  const wispy = kind === "fractus" || kind === "cirrus";
-
-  // ---- growth parameters vary wildly per seed -----------------------------
-  const lobes =
-    kind === "cirrus"
-      ? 7 + Math.floor(rnd() * 9)
-      : kind === "stratocumulus"
-        ? 5 + Math.floor(rnd() * 6)
-        : 2 + Math.floor(rnd() * 6);
-  const massAt = 0.1 + rnd() * 0.8;
-  const tilt = (rnd() - 0.5) * (kind === "towering" || kind === "congestus" ? 0.6 : 0.34);
-  const baseScale =
-    kind === "cirrus" ? 0.05 : kind === "fractus" ? 0.085 : kind === "stratocumulus" ? 0.11 : 0.16;
-  const heightGain =
-    kind === "towering" ? 2.1 : kind === "congestus" ? 1.5 : kind === "stratocumulus" ? 0.5 : 1;
-  const spacing = 0.4 + rnd() * 0.9;
-  const jitter = 0.3 + rnd() * 1.1;
-  // some clouds are one dominant mass, others a broken chain of cells
-  const clumpiness = rnd();
-
-  let x = 0;
-  for (let i = 0; i < lobes; i++) {
-    const u = lobes === 1 ? 0.5 : i / (lobes - 1);
-    const dist = Math.abs(u - massAt) / Math.max(massAt, 1 - massAt);
-    const falloff = Math.pow(Math.max(0.08, 1 - dist * dist), 0.6 + clumpiness * 1.2);
-    const weight = falloff * (0.5 + rnd() * (1 + clumpiness));
-    const r = baseScale * (0.5 + weight * 1.3) * (0.6 + rnd() * 0.9);
-    x += r * spacing * (0.5 + rnd() * 1.1) + (rnd() < 0.18 ? baseScale * rnd() * 1.4 : 0);
-    const y =
-      -r * (0.15 + rnd() * 0.6) * heightGain +
-      tilt * x +
-      (rnd() - 0.5) * baseScale * jitter * 0.6;
-    raw.push({ x, y, r });
-
-    // cauliflower crowns stacked on the heavy side of each lobe
-    const crowns = wispy ? Math.floor(rnd() * 2) : Math.floor(rnd() * (2 + weight * 4));
-    const lean = rnd() - 0.5;
-    for (let j = 0; j < crowns; j++) {
-      const rr = r * (0.22 + rnd() * 0.6);
-      const cxp = x + lean * r * 1.6 + (rnd() - 0.5) * r * 1.3;
-      const cyp = y - r * (0.25 + rnd() * 0.95) * heightGain;
-      raw.push({ x: cxp, y: cyp, r: rr });
-      // second and third generation billows on bigger towers
-      if (rnd() < 0.35 + heightGain * 0.12) {
-        raw.push({
-          x: cxp + (rnd() - 0.5) * rr * 2.2,
-          y: cyp - rr * (0.6 + rnd() * 1.3) * heightGain,
-          r: rr * (0.35 + rnd() * 0.5),
-        });
-      }
-    }
-  }
-
-  const span = Math.max(0.001, x);
-
-  // flat-ish base, but ragged: some segments hang lower than others
-  if (!wispy) {
-    const fill = 2 + Math.floor(rnd() * 6);
-    const sag = rnd() * 0.06;
-    for (let i = 0; i < fill; i++) {
-      const fx = (span * (i + 0.2 + rnd() * 0.7)) / fill;
+  // Secondary cauliflower billows add natural detail while preserving the
+  // strong primary silhouette that makes the cloud easy to interpret.
+  const primary = [...raw];
+  for (const p of primary) {
+    const crowns = 1 + Math.floor(rnd() * 3);
+    for (let i = 0; i < crowns; i++) {
+      const rr = p.r * (0.22 + rnd() * 0.25);
       raw.push({
-        x: fx,
-        y: -0.005 - rnd() * sag + tilt * fx,
-        r: 0.04 + rnd() * 0.1,
+        x: p.x + (rnd() - 0.5) * p.r * 1.25,
+        y: p.y - p.r * (0.38 + rnd() * 0.52),
+        r: rr,
       });
     }
   }
 
-  // cirrus streak off the downwind end
-  if (kind === "cirrus" || rnd() < 0.22) {
-    const dir = rnd() < 0.5 ? -1 : 1;
-    const streak = 2 + Math.floor(rnd() * 5);
-    for (let i = 0; i < streak; i++) {
-      const t = (i + 1) / streak;
-      raw.push({
-        x: (dir < 0 ? 0 : span) + dir * t * span * (0.2 + rnd() * 0.5),
-        y: -t * (0.04 + rnd() * 0.14) + tilt * span,
-        r: (0.05 + rnd() * 0.05) * (1 - t * 0.6),
-      });
-    }
-  }
-
-  // detached wisps trailing off one side
-  const wisps = Math.floor(rnd() * 4);
-  for (let i = 0; i < wisps; i++) {
-    const side = rnd() < 0.5 ? -1 : 1;
+  // A few connected edge wisps break symmetry without creating stray streaks.
+  const edges = raw.toSorted((a, b) => a.x - b.x);
+  for (const p of [edges[0], edges[edges.length - 1]]) {
+    if (!p || rnd() > 0.65) continue;
     raw.push({
-      x: side < 0 ? -0.04 - rnd() * 0.2 : span + 0.02 + rnd() * 0.22,
-      y: -rnd() * 0.2 + tilt * span * (side < 0 ? 0 : 1),
-      r: 0.025 + rnd() * 0.07,
+      x: p.x + Math.sign(p.x || 1) * p.r * (0.55 + rnd() * 0.35),
+      y: p.y + (rnd() - 0.5) * p.r,
+      r: p.r * (0.3 + rnd() * 0.18),
     });
   }
 
@@ -170,22 +146,23 @@ export function makeCloudSeed(seed: number = randomSeed()): CloudSeed {
     minY = Math.min(minY, p.y - p.r);
     maxY = Math.max(maxY, p.y + p.r);
   }
-  const w = maxX - minX;
-  const h = maxY - minY;
+  const w = Math.max(0.001, maxX - minX);
+  const h = Math.max(0.001, maxY - minY);
 
   const style: CloudStyle = {
-    freq: (kind === "cirrus" ? 1.5 : 0.75) + rnd() * 0.9,
-    warp: (wispy ? 0.045 : 0.035) + rnd() * 0.055,
-    erode: 0.07 + rnd() * 0.1 + (wispy ? 0.03 : 0),
-    gain: 0.66 + rnd() * 0.3,
-    rough: 0.5 + rnd() * 1.3,
-    dense: wispy ? 0.8 + rnd() * 0.5 : 1.3 + rnd() * 1.1,
-    flat: wispy ? 0 : kind === "stratocumulus" ? 0.2 + rnd() * 0.4 : rnd(),
+    freq: 0.78 + rnd() * 0.58,
+    warp: 0.03 + rnd() * 0.035,
+    erode: 0.065 + rnd() * 0.065,
+    gain: 0.76 + rnd() * 0.18,
+    rough: 0.5 + rnd() * 0.75,
+    dense: 1.35 + rnd() * 0.8,
+    flat: kind === "stratocumulus" ? 0.3 + rnd() * 0.3 : 0.12 + rnd() * 0.6,
   };
 
   return {
     seed,
     kind,
+    archetype,
     style,
     nx: rnd() * 900,
     ny: rnd() * 900,

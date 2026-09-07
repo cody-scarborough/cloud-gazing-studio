@@ -21,6 +21,7 @@ type SkyCloud = {
   named: boolean;
   fade: number;
   squash: number;
+  clear: number;
 };
 
 type Floater = { text: string; x: number; y: number; vx: number; life: number };
@@ -101,6 +102,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       named: false,
       fade: offscreen ? 0 : 1,
       squash: 0.78 + Math.pow(depth, 0.8) * 0.22,
+      clear: 0,
     };
     cloudsRef.current.push(cloud);
     // keep painter's order: distant clouds behind nearer ones

@@ -21,6 +21,7 @@ type SkyCloud = {
   named: boolean;
   fade: number;
   squash: number;
+  clear: number;
 };
 
 type Floater = { text: string; x: number; y: number; vx: number; life: number };
@@ -101,6 +102,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       named: false,
       fade: offscreen ? 0 : 1,
       squash: 0.78 + Math.pow(depth, 0.8) * 0.22,
+      clear: 0,
     };
     cloudsRef.current.push(cloud);
     // keep painter's order: distant clouds behind nearer ones
@@ -249,9 +251,15 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       const sunDir = palette.sunX < 0.5 ? -1 : 1;
       const paletteBucket = Math.floor(timeRef.current * 240);
       const list = cloudsRef.current;
+      const selId = selectedRef.current;
+      // while you're naming a cloud, the others politely drift aside
+      const order =
+        selId == null
+          ? list
+          : [...list.filter((c) => c.id !== selId), ...list.filter((c) => c.id === selId)];
 
-      for (const c of list) {
-        const selectedThis = selectedRef.current === c.id;
+      for (const c of order) {
+        const selectedThis = selId === c.id;
         c.morph += dt * 0.16;
         c.fade = Math.min(1, c.fade + dt * 0.5);
 
@@ -294,18 +302,36 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         if (!c.sprite) continue;
 
         const pad = Math.round(c.width * SPRITE_PAD_RATIO);
+
+        // ease the "step aside" amount for every cloud that isn't being named
+        const wantClear = selId != null && !selectedThis ? 1 : 0;
+        c.clear += (wantClear - c.clear) * Math.min(1, dt * 1.6);
+        if (c.clear < 0.001) c.clear = 0;
+        const cx = c.x + c.width / 2;
+        const cy = c.y + (c.width * c.seed.aspect) / 2;
+        const dirX = cx < w * 0.5 ? -1 : 1;
+        const dirY = cy < h * 0.32 ? -1 : 1;
+        const ease = c.clear * c.clear * (3 - 2 * c.clear);
+        const offX = dirX * ease * (w * 0.34 + c.width * 0.35);
+        const offY = dirY * ease * h * 0.06;
+
         // perspective foreshortening: distant clouds flatten toward the horizon
         const squash = selectedThis ? 1 : c.squash;
-        const alpha = selectedThis ? c.fade : c.fade * (0.78 + c.depth * 0.22);
+        const alpha =
+          (selectedThis ? c.fade : c.fade * (0.78 + c.depth * 0.22)) * (1 - ease * 0.65);
+        if (alpha <= 0.01) {
+          ctx.globalAlpha = 1;
+          continue;
+        }
         ctx.globalAlpha = alpha;
         const drawSprite = () => {
           if (squash === 1) {
-            ctx.drawImage(c.sprite!, c.x - pad, c.y - pad);
+            ctx.drawImage(c.sprite!, c.x - pad + offX, c.y - pad + offY);
           } else {
             ctx.save();
-            ctx.translate(0, c.y - pad);
+            ctx.translate(0, c.y - pad + offY);
             ctx.scale(1, squash);
-            ctx.drawImage(c.sprite!, c.x - pad, 0);
+            ctx.drawImage(c.sprite!, c.x - pad + offX, 0);
             ctx.restore();
           }
         };

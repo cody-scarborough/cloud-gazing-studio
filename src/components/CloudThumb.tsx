@@ -34,7 +34,7 @@ export function CloudThumb({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const palette = paletteAt(skyTime);
-      drawSkyBackdrop(ctx, palette, w, h);
+      drawSkyBackdrop(ctx, palette, w, h, 0, { sun: false });
 
       const sprite = renderCloudSprite(seed, w * 0.7, palette, 0, {
         sunDir: palette.sunX < 0.5 ? -1 : 1,

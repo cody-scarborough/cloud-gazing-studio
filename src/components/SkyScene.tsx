@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX, Wind, Sun } from "lucide-react";
 
-import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudSeed } from "@/lib/sky/cloud";
+import { makeCloudSeed, puffPixels, renderCloudSprite, SPRITE_PAD_RATIO, type CloudArchetype, type CloudSeed } from "@/lib/sky/cloud";
 import { css, paletteAt, type SkyPalette } from "@/lib/sky/palette";
 import { SkyAudio } from "@/lib/sky/audio";
 import { drawSkyBackdrop } from "@/lib/sky/backdrop";
@@ -51,6 +51,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   const sizeRef = useRef({ w: 1200, h: 800 });
   const audioRef = useRef<SkyAudio | null>(null);
   const nextIdRef = useRef(1);
+  const recentArchetypesRef = useRef<CloudArchetype[]>([]);
   const spawnTimersRef = useRef({ chirp: 12 });
 
   const [selected, setSelected] = useState<{ id: number; seed: CloudSeed } | null>(null);
@@ -63,20 +64,28 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
   // low, pale and slow; clouds overhead are large, high, crisp and fast.
   // depth 0 = far horizon, 1 = directly overhead.
   const placeCloud = useCallback((depth: number, w: number, h: number, aspect: number) => {
-    const sizeVar = 0.75 + Math.random() * 0.5;
-    const width = w * (0.05 + Math.pow(depth, 1.9) * 0.24) * sizeVar;
+    const sizeVar = 0.88 + Math.random() * 0.24;
+    const width = w * (0.13 + Math.pow(depth, 1.45) * 0.2) * sizeVar;
     // cumulus share a condensation altitude, so their bases fall on one
     // receding line: distant bases hug the horizon, near bases ride high
-    const baseFrac = 0.94 - Math.pow(depth, 0.8) * 0.72 + (Math.random() - 0.5) * 0.06;
+    const baseFrac = 0.9 - Math.pow(depth, 0.82) * 0.66 + (Math.random() - 0.5) * 0.045;
     const y = h * baseFrac - width * aspect;
     return { width, y };
   }, []);
 
+  const makeFreshSeed = useCallback(() => {
+    const seed = makeCloudSeed(randomSeed(), recentArchetypesRef.current);
+    if (seed.archetype) {
+      recentArchetypesRef.current = [...recentArchetypesRef.current.slice(-2), seed.archetype];
+    }
+    return seed;
+  }, []);
+
   const spawnCloud = useCallback((offscreen: boolean) => {
     const { w, h } = sizeRef.current;
-    // skew toward distance so the horizon reads crowded and the sky feels deep
-    const depth = Math.pow(Math.random(), 1.45);
-    const seed = makeCloudSeed(randomSeed());
+    // Favor readable middle-distance clouds; a few far forms still create depth.
+    const depth = 0.18 + Math.pow(Math.random(), 0.72) * 0.82;
+    const seed = makeFreshSeed();
     const { width, y } = placeCloud(depth, w, h, seed.aspect);
     const cloud: SkyCloud = {
       id: nextIdRef.current++,
@@ -91,12 +100,12 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       spriteKey: "",
       named: false,
       fade: offscreen ? 0 : 1,
-      squash: 0.62 + Math.pow(depth, 0.8) * 0.38,
+      squash: 0.78 + Math.pow(depth, 0.8) * 0.22,
     };
     cloudsRef.current.push(cloud);
     // keep painter's order: distant clouds behind nearer ones
     cloudsRef.current.sort((a, b) => a.depth - b.depth);
-  }, [placeCloud]);
+  }, [makeFreshSeed, placeCloud]);
 
 
 
@@ -255,14 +264,14 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         }
 
         if (c.x > w + c.width * 0.6) {
-          c.seed = makeCloudSeed(randomSeed());
+          c.seed = makeFreshSeed();
           c.named = false;
-          c.depth = Math.pow(Math.random(), 1.45);
+          c.depth = 0.18 + Math.pow(Math.random(), 0.72) * 0.82;
           const placed = placeCloud(c.depth, w, h, c.seed.aspect);
           c.width = placed.width;
           c.y = placed.y;
           c.x = -c.width * 1.3;
-          c.squash = 0.62 + Math.pow(c.depth, 0.8) * 0.38;
+          c.squash = 0.78 + Math.pow(c.depth, 0.8) * 0.22;
           c.fade = 0;
           c.spriteKey = "";
         }
@@ -276,7 +285,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
             sunDir,
             stretch,
             detail: selectedThis ? 1 : 0.4 + c.depth * 0.6,
-            haze: selectedThis ? 0 : Math.pow(1 - c.depth, 1.2) * 0.78,
+            haze: selectedThis ? 0 : Math.pow(1 - c.depth, 1.35) * 0.38,
             hazeColor: palette.mid,
           });
           c.spriteKey = key;
@@ -287,7 +296,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
         const pad = Math.round(c.width * SPRITE_PAD_RATIO);
         // perspective foreshortening: distant clouds flatten toward the horizon
         const squash = selectedThis ? 1 : c.squash;
-        const alpha = selectedThis ? c.fade : c.fade * (0.5 + c.depth * 0.5);
+        const alpha = selectedThis ? c.fade : c.fade * (0.78 + c.depth * 0.22);
         ctx.globalAlpha = alpha;
         const drawSprite = () => {
           if (squash === 1) {
@@ -361,7 +370,7 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       window.clearInterval(label);
       window.removeEventListener("resize", resize);
     };
-  }, [spawnCloud, placeCloud]);
+  }, [spawnCloud, placeCloud, makeFreshSeed]);
 
   useEffect(() => {
     audioRef.current = new SkyAudio();

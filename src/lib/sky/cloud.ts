@@ -126,7 +126,7 @@ export function makeCloudSeed(seed: number = randomSeed(), excluded: readonly Cl
   }
 
   // A few connected edge wisps break symmetry without creating stray streaks.
-  const edges = raw.toSorted((a, b) => a.x - b.x);
+  const edges = [...raw].sort((a, b) => a.x - b.x);
   for (const p of [edges[0], edges[edges.length - 1]]) {
     if (!p || rnd() > 0.65) continue;
     raw.push({

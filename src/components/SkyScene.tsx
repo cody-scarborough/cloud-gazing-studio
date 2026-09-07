@@ -251,9 +251,15 @@ export function SkyScene({ onSave, signedIn, saving }: SkySceneProps) {
       const sunDir = palette.sunX < 0.5 ? -1 : 1;
       const paletteBucket = Math.floor(timeRef.current * 240);
       const list = cloudsRef.current;
+      const selId = selectedRef.current;
+      // while you're naming a cloud, the others politely drift aside
+      const order =
+        selId == null
+          ? list
+          : [...list.filter((c) => c.id !== selId), ...list.filter((c) => c.id === selId)];
 
-      for (const c of list) {
-        const selectedThis = selectedRef.current === c.id;
+      for (const c of order) {
+        const selectedThis = selId === c.id;
         c.morph += dt * 0.16;
         c.fade = Math.min(1, c.fade + dt * 0.5);
 
